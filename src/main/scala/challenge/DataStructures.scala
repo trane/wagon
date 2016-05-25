@@ -1,6 +1,16 @@
 package challenge
 
+/**
+  * Contains helpful datastructures to account for:
+  *   - Coersion of Option[String] to proper values
+  *   - Nicer syntax: Scala's tuple syntax is very difficult to understand when deeply nested
+  *   - Showing the values of these structures in a readable way
+  */
 object DataStructures {
+
+  /**
+    * Counts for null and non-null index in rows
+    */
   case class Counts(values: Int, empties: Int) {
     val total = values + empties
 
@@ -14,60 +24,12 @@ object DataStructures {
 
   }
 
+  /**
+    * zero/unit constructor helper
+    */
   object Counts {
-    // Unit/Zero constructor
     val empty: Counts = Counts(0, 0)
   }
-
-  /**
-    * Values is meant to contain the counts and statistics associated with a Column.
-    *
-    * Row values contain an `append` contract to create a new
-    * Values object with the appropriate stats appended to it
-    */
-  trait Values {
-    val counts: Counts
-
-    def append(option: Option[String]): Values
-  }
-
-  object Values {
-    /**
-      * Unit/Initializer for any type of Values, given a Column return a
-      * unit Values object
-      */
-    def empty(c: Column): Values = c match {
-      case t: Text => Texts(Counts.empty, TextStats.empty)
-      case t: Number => Numbers(Counts.empty, NumberStats.empty)
-    }
-  }
-
-  /**
-    * Numbers is to be paired with a Column type of Number
-    */
-  case class Numbers(counts: Counts, stats: NumberStats) extends Values {
-
-    def append(option: Option[String]): Numbers = option match {
-      case None => this.copy(counts = this.counts(option))
-      case Some(v) => Numbers(counts(option), stats.append(v.toDouble))
-    }
-
-    override def toString: String =
-      s"  $counts\n  $stats"
-  }
-
-  /**
-    * Texts is to be paired with a Column type of Text
-    */
-  case class Texts(counts: Counts, stats: TextStats) extends Values {
-    def append(option: Option[String]): Texts = option match {
-      case None => this.copy(counts = this.counts(option))
-      case Some(v) => Texts(counts(option), stats.append(v))
-    }
-    override def toString: String =
-      s"  $counts\n  $stats"
-  }
-
 
   /**
     * Stats break down Text vs Number stats, allowing for a generic `append` function to add stats
@@ -85,11 +47,13 @@ object DataStructures {
     * shortest and longest are Option[Double] since every value at the col,row could be null
     */
   case class NumberStats(min: Option[Double], max: Option[Double], sum: Double) extends Stats[Double] {
+    assert(sum >= 0.0) // let's explode if we overflow
+
     def append(d: Double): NumberStats =
       NumberStats(Some(Math.min(min getOrElse d, d)), Some(Math.max(max getOrElse d, d)), sum+d)
 
     override def toString: String = {
-      s"stats :: shortest: $min | longest: $max | sum: $sum"
+      s"stats :: shortest: ${min getOrElse "---"} | longest: ${max getOrElse "----"} | sum: $sum"
     }
   }
   object NumberStats {
@@ -101,6 +65,7 @@ object DataStructures {
     * shortest and longest are Option[String] since every value at the col,row could be null
     */
   case class TextStats(shortest: Option[String], longest: Option[String], sum: Double) extends Stats[String] {
+    assert(sum >= 0.0) // let's explode if we overflow
 
     def append(str: String): TextStats =
       TextStats(Some(min(str)), Some(max(str)), sum + str.length)
@@ -124,11 +89,61 @@ object DataStructures {
     }
 
     override def toString: String = {
-      s"stats :: shortest: $shortest | longest: $longest | sum: $sum"
+      s"stats :: shortest: ${shortest getOrElse "---"} | longest: ${longest getOrElse "---"} | sum: $sum"
     }
   }
+
   object TextStats {
     val empty: TextStats = TextStats(None, None, 0.0)
+  }
+
+  /**
+    * Values is the product type of Counts and Stats, it is column associated (one per index in a row)
+    *
+    * Row values contain an `append` contract to create a new
+    * Values object with the appropriate stats appended to it
+    */
+  trait Values {
+    val counts: Counts
+
+    def append(option: Option[String]): Values
+  }
+
+  object Values {
+    /**
+      * zero/unit for any type of Values, given a Column return a
+      * unit Values object
+      */
+    def empty(c: Column): Values = c match {
+      case t: Text => Texts(Counts.empty, TextStats.empty)
+      case t: Number => Numbers(Counts.empty, NumberStats.empty)
+    }
+  }
+
+  /**
+    * Numbers is to be paired with a Column type of Number
+    */
+  case class Numbers(counts: Counts, stats: NumberStats) extends Values {
+
+    def append(option: Option[String]): Numbers = option match {
+      case None => this.copy(counts = this.counts(option))
+      case Some(v) => Numbers(counts(option), stats.append(v.toDouble))
+    }
+
+    override def toString: String =
+      s"  $counts\n  $stats | avg: ${stats.avg(counts.total)}"
+  }
+
+  /**
+    * Texts is to be paired with a Column type of Text
+    */
+  case class Texts(counts: Counts, stats: TextStats) extends Values {
+    def append(option: Option[String]): Texts = option match {
+      case None => this.copy(counts = this.counts(option))
+      case Some(v) => Texts(counts(option), stats.append(v))
+    }
+    override def toString: String =
+      s"  $counts\n  $stats | avg: ${stats.avg(counts.total)}"
   }
 
 }

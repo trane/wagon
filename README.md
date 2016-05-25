@@ -1,4 +1,40 @@
+# Design
 
+I went through a few iterations of work on this project, which are detailed in
+Design.md and Design2.md.
+
+# Usage
+
+This is an sbt 0.13.8+ project and example usage can be found by running the
+following command from the root of this directory:
+
+```
+$ sbt "run --help"
+Usage: <command> [options] where options would be:
+ --pull <num>    <num> is number of records to pull
+ --path <path>   <path> is the path to the generator
+ --help          Print this usage
+
+ If no options are given, it will assume it is taking input from
+ STDIN.
+
+ Example Usage:
+   # run this program using stdin
+   ./generator 10000 | <command>
+
+   # run this with the generator in PULL mode
+   <command> --pull 1000000 --path "./generator"
+```
+
+From my laptop I run it the following ways:
+
+```
+# pull mode
+$ sbt "run --pull 100000 --path /Users/akuhnhausen/workspace/wagon/generator
+
+# pipe mode
+$ ./generator 100000 | sbt run
+```
 
 # Problem 1: Streaming statistics computation
 
