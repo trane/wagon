@@ -1,3 +1,44 @@
+# Notes
+
+This was a lot of fun.
+
+## Some fun things I learned
+
+  - It turns out that 64-bit Doubles allow for *many* *many* *many* rows before
+    they overflow. I was able to do 100,000,000 rows without an overflow
+  - Using immutable datastructures really didn't cause any noticeable GC
+    cycles, it turns out that the JVM has an O(1) algorithm for GC of "eden"
+    phase objects. Since almost all of the objects are created and then
+    destroyed it had 0 impact for the pause-the-world gc. AWESOME!
+  - Turns out scala's collections don't have `sequence`, but it was
+    straight-forward to add in the package object
+  - Running long-running processes that interface with stdin and stdout are not
+    as straight-forward in java/scala as I would have thought. But, in the end
+    it wasn't much code to make it work
+
+## Things that would be fun to work towards (with more time)
+
+  - Build with parser combinators for a more functional, type-safe approach
+  - Explore that specific Stats are parametric on the Column type, along with
+    parser combinators we could have a nice type-class approach to both value
+    coersion and computations.
+  - The computations are easily convergent (simple adding), parallelizing the
+    computations could speed things up
+
+## Runtime performance visuals
+
+### Pull Mode
+
+![10,000,000](pull_mode_10000000.png =640x480)
+
+### Push Mode
+
+![10,000,000](push_mode_10000000.png =640x480)
+
+### 100,000,000 rows in Pull mode
+
+![100,000,000](pull_mode_100000000.png =640x480)
+
 # Design
 
 I went through a few iterations of work on this project, which are detailed in
